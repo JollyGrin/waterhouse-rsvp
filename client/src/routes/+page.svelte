@@ -8,4 +8,6 @@
 </svelte:head>
 
 <Nav />
-<ScheduleGrid />
+<div class="container mx-auto h-[800px]">
+	<ScheduleGrid />
+</div>

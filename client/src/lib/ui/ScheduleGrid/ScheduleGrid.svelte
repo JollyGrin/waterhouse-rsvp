@@ -91,8 +91,7 @@
 </script>
 
 <div
-	class="overflow-x-auto rounded-lg p-2"
-	style="background: var(--color-brand-back); max-height: 70vh; overflow-y: auto;"
+	class="bg-brand-back h-full overflow-x-auto overflow-y-auto rounded-lg p-2"
 	bind:this={gridEl}
 	on:scroll={handleScroll}
 >
@@ -103,13 +102,11 @@
 	>
 		<!-- Header Row -->
 		<div
-			class="sticky top-0 left-0 z-30 border-r-2 border-b-2 px-2 py-1 text-center font-bold"
-			style="background: var(--color-brand-back); color: var(--color-brand-fore); border-color: var(--color-brand-shadow); font-family: var(--font-geist);"
+			class="text-brand-fore bg-brand-back border-brand-shadow sticky top-0 left-0 z-30 border-r-2 border-b-2 px-2 py-1 text-center font-bold"
 		></div>
 		{#each studios as studio}
 			<div
-				class="sticky top-0 z-20 border-b-2 px-2 py-1 text-center font-bold"
-				style="background: var(--color-brand-back); color: var(--color-brand-fore); border-color: var(--color-brand-shadow); font-family: var(--font-geist);"
+				class="bg-brand-back text-brand-for border-brand-shadow sticky top-[-10px] z-20 border-b-2 px-2 py-1 text-center font-bold"
 			>
 				{studio}
 			</div>
@@ -118,29 +115,33 @@
 		{#each Array(numDays) as _, dayIdx}
 			<!-- Sticky Date Header Row -->
 			<div
-				class="sticky left-0 z-50 border-r-2 px-2 py-1 font-bold"
-				style="top:1px; background: var(--color-brand-back); color: var(--color-brand-highlight); border-color: var(--color-brand-shadow); font-size: 1.1rem; font-family: var(--font-geist);"
+				class="bg-brand-back text-brand-highlight border-brand-shadow sticky top-[-10px] left-0 z-50 border-r-2 px-2 py-1 font-bold"
 			>
 				{formatDate(
 					new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + dayIdx)
 				)}
 			</div>
 			{#each studios as studio}
-				<div class="" style="background: var(--color-brand-back);"></div>
+				<div class="bg-brand-fore/5"></div>
 			{/each}
 			{#each times as time, timeIdx}
 				<div
-					class="sticky left-0 z-10 border-r-2 px-2 py-1 text-sm"
-					style="background: var(--color-brand-back); color: var(--color-brand-fore); border-color: var(--color-brand-shadow); font-family: var(--font-geist);"
+					class="bg-brand-back text-brand-fore border-brand-shadow sticky left-0 z-10 justify-self-end border-r-2 px-2 py-1 text-sm"
 				>
 					{time}
 				</div>
 				{#each studios as studio, colIdx}
 					<div
-						class="border-r border-b px-2 py-1 text-center text-sm"
+						class="group bg-brand-back text-brand-fore border-brand-shadow border-r border-b px-2 py-1 text-center text-sm"
 						class:!bg-[var(--color-brand-highlight)]={isBooked(dayIdx, timeIdx, colIdx)}
-						style="background: var(--color-brand-back); color: var(--color-brand-fore); border-color: var(--color-brand-shadow); font-family: var(--font-geist);"
-					></div>
+					>
+						<span
+							class="text-brand-fore/5 group-hover:text-brand-fore/25 transition-all"
+							class:text-emerald-500={isBooked(dayIdx, timeIdx, colIdx)}
+						>
+							{time}
+						</span>
+					</div>
 				{/each}
 			{/each}
 		{/each}
