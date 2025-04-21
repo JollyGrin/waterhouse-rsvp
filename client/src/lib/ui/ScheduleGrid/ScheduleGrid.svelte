@@ -126,7 +126,7 @@
 			{/each}
 			{#each times as time, timeIdx}
 				<div
-					class="bg-brand-back text-brand-fore border-brand-shadow sticky left-0 z-10 justify-self-end border-r-2 px-2 py-1 text-sm"
+					class="bg-brand-back text-brand-fore border-brand-shadow sticky left-0 z-10 justify-self-end border-r-1 px-2 py-1 text-sm font-bold"
 				>
 					{time}
 				</div>
