@@ -10,7 +10,6 @@
 	const clerk = useClerkContext();
 	const userId = $derived(clerk.auth.userId);
 	const userName = $derived(clerk.user?.username ?? clerk.user?.fullName);
-	$inspect(clerk);
 </script>
 
 <header class="flex flex-col-reverse items-center justify-between gap-4 p-4 md:flex-row">

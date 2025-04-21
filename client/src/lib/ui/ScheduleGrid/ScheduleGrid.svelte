@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import ModalBooking from './ModalBooking.svelte';
 
 	const studios: string[] = ['Studio 1', 'Studio 2', 'Studio 3', 'Studio 4', 'Studio 5'];
 	const times: string[] = [
@@ -37,9 +38,9 @@
 	}
 
 	type Row = { date: Date; time: string; dayIdx: number; timeIdx: number };
-	let visibleRows: Row[] = [];
-	let startDate: Date = new Date(2025, 3, 22); // April 22, 2025
-	let numDays: number = 5;
+	let visibleRows: Row[] = $state([]);
+	let startDate: Date = new Date(); // April 22, 2025
+	let numDays: number = $state(5);
 
 	function addMoreRows(): void {
 		const rows: Row[] = [];
@@ -79,7 +80,13 @@
 	let gridEl: HTMLDivElement;
 	function handleScroll(e: Event): void {
 		const target = e.target as HTMLDivElement;
-		if (target.scrollTop + target.clientHeight >= target.scrollHeight - 200) {
+		console.table({
+			scrollTop: target.scrollTop,
+			scrollHeight: target.scrollHeight,
+			isBottom: target.scrollTop + target.clientHeight >= target.scrollHeight - 300
+		});
+		if (target.scrollTop + target.clientHeight >= target.scrollHeight - 300) {
+			console.log('adding more rows');
 			numDays += 2;
 			addMoreRows();
 		}
@@ -88,7 +95,13 @@
 	onMount(() => {
 		addMoreRows();
 	});
+
+	let isBookingModalOpen = $state(false);
 </script>
+
+{#if isBookingModalOpen}
+	<ModalBooking onClose={() => (isBookingModalOpen = false)} />
+{/if}
 
 <div
 	class="bg-brand-back h-full overflow-x-auto overflow-y-auto rounded-lg p-2"
@@ -115,7 +128,7 @@
 		{#each Array(numDays) as _, dayIdx}
 			<!-- Sticky Date Header Row -->
 			<div
-				class="bg-brand-back text-brand-highlight border-brand-shadow text-md sticky top-[-10px] left-0 z-50 border-r-2 px-2 py-1 text-end font-bold"
+				class="bg-brand-back text-brand-highlight border-brand-shadow text-md sticky top-[-10px] left-0 z-30 border-r-2 px-2 py-1 text-end font-bold"
 			>
 				{formatDate(
 					new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + dayIdx)
