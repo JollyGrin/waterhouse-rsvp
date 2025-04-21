@@ -1,6 +1,6 @@
 # Use the Node alpine official image
 # https://hub.docker.com/_/node
-FROM node:lts-alpine
+FROM node:lts
 
 # Create and change to the app directory.
 WORKDIR /app
@@ -18,4 +18,4 @@ COPY . ./
 RUN npm run build
 
 # Serve the app
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "preview", "--", "--port", "8080"]
