@@ -111,7 +111,6 @@
 		/* disabled for 4-hour block selection */
 	}
 
-
 	function clearSelection() {
 		selection = null;
 	}
@@ -184,8 +183,9 @@
 				</div>
 				{#each studios as studio, colIdx}
 					<div
-						class={`group bg-brand-back text-brand-fore border-brand-shadow cursor-pointer border-r border-b  px-2 py-1 text-center text-sm transition-all ${isSelected(dayIdx, timeIdx, colIdx) ? 'bg-emerald-800' : ''}`}
-						class:!bg-[var(--color-brand-highlight)]={isBooked(dayIdx, timeIdx, colIdx)}
+						class={`group bg-brand-highlight text-brand-fore border-brand-shadow cursor-pointer border-r border-b  px-2 py-1 text-center text-sm transition-all`}
+						class:!bg-[var(--color-brand-back)]={isBooked(dayIdx, timeIdx, colIdx)}
+						class:!bg-emerald-900={isSelected(dayIdx, timeIdx, colIdx)}
 						tabindex="0"
 						role="button"
 						onclick={() =>
@@ -198,7 +198,7 @@
 					>
 						<span
 							class="text-brand-fore/5 group-hover:text-brand-fore/25 font-mono transition-all"
-							class:text-emerald-500={isBooked(dayIdx, timeIdx, colIdx)}
+							class:text-emerald-500={!isBooked(dayIdx, timeIdx, colIdx)}
 							class:text-brand-fore={isSelected(dayIdx, timeIdx, colIdx)}
 						>
 							{time}
