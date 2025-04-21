@@ -1,5 +1,5 @@
 <script lang="ts">
-	import env from '$env/static/public';
+	import * as env from '$env/static/public';
 	import '../app.css';
 	import { ClerkProvider } from 'svelte-clerk';
 
