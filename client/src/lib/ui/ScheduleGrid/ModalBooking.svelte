@@ -1,8 +1,15 @@
 <script lang="ts">
 	let {
-		onClose
+		onClose,
+		selection
 	}: {
 		onClose(): void;
+		selection: {
+			dayIdx: number;
+			studioIdx: number;
+			startHourIdx: number;
+			endHourIdx: number;
+		} | null;
 	} = $props();
 
 	// Event handlers
@@ -18,6 +25,15 @@
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
+
+{#snippet modalBody()}
+	TODO: replace this div content with the booking form Leave the below code alone
+
+	<span>
+		{selection?.startHourIdx?.toString()}-
+		{selection?.endHourIdx?.toString()}
+	</span>
+{/snippet}
 
 <!-- Modal Overlay with Backdrop -->
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
@@ -39,7 +55,9 @@
 		</div>
 
 		<!-- Modal Body -->
-		<div class="px-6 pb-6">dhsajkdhasjk</div>
+		<div class="px-6 pb-6">
+			{@render modalBody()}
+		</div>
 	</dialog>
 
 	<!-- Invisible overlay to close modal when clicking outside -->
