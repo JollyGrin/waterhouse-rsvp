@@ -1,40 +1,79 @@
-<script>
-  // Example data for demonstration
-  const studios = ['Studio 1', 'Studio 2', 'Studio 3', 'Studio 4', 'Studio 5'];
-  const times = [
+<script lang="ts">
+  import { onMount } from 'svelte';
+
+  const studios: string[] = ['Studio 1', 'Studio 2', 'Studio 3', 'Studio 4', 'Studio 5'];
+  const times: string[] = [
     '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
     '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00',
     '20:00', '21:00', '22:00', '23:00', '00:00', '01:00', '02:00', '03:00'
   ];
-  const day = 'Tue, Apr 22';
 
-  // Example: which slots are booked (row, col)
-  const booked = [
-    [0, 0], [0, 1], [0, 4], // 06:00 booked in some studios
-    [3, 1], [4, 1], [5, 1], // 09:00-11:00 Studio 2
-    [8, 3], [9, 3], // 14:00-15:00 Studio 4
-    [8, 1], [9, 1], // 14:00-15:00 Studio 2
-    [16, 4], [17, 4], [18, 4], // 22:00-00:00 Studio 5
+  // Helper to format date as 'Tue, Apr 22'
+  function formatDate(date: Date): string {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short', month: 'short', day: '2-digit'
+    });
+  }
+
+  type Row = { date: Date; time: string; dayIdx: number; timeIdx: number };
+  let visibleRows: Row[] = [];
+  let startDate: Date = new Date(2025, 3, 22); // April 22, 2025
+  let numDays: number = 5;
+
+  function addMoreRows(): void {
+    const rows: Row[] = [];
+    for (let d = 0; d < numDays; d++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + d);
+      for (let t = 0; t < times.length; t++) {
+        rows.push({ date: new Date(date), time: times[t], dayIdx: d, timeIdx: t });
+      }
+    }
+    visibleRows = rows;
+  }
+
+  addMoreRows();
+
+  // Example: which slots are booked (dayIdx, timeIdx, col)
+  const booked: [number, number, number][] = [
+    [0, 0, 0], [0, 0, 1], [0, 0, 4], // Day 0, 06:00 booked in some studios
+    [0, 3, 1], [0, 4, 1], [0, 5, 1], // Day 0, 09:00-11:00 Studio 2
+    [0, 8, 3], [0, 9, 3], // Day 0, 14:00-15:00 Studio 4
+    [0, 8, 1], [0, 9, 1], // Day 0, 14:00-15:00 Studio 2
+    [0, 16, 4], [0, 17, 4], [0, 18, 4], // Day 0, 22:00-00:00 Studio 5
   ];
 
-  function isBooked(row, col) {
-    return booked.some(([r, c]) => r === row && c === col);
+  function isBooked(dayIdx: number, timeIdx: number, col: number): boolean {
+    return booked.some(([d, t, c]) => d === dayIdx && t === timeIdx && c === col);
   }
+
+  let gridEl: HTMLDivElement;
+  function handleScroll(e: Event): void {
+    const target = e.target as HTMLDivElement;
+    if (target.scrollTop + target.clientHeight >= target.scrollHeight - 200) {
+      numDays += 2;
+      addMoreRows();
+    }
+  }
+
+  onMount(() => {
+    addMoreRows();
+  });
 </script>
 
-<div class="schedule-outer">
-  <div class="schedule-grid">
+<div class="schedule-outer" bind:this={gridEl} on:scroll={handleScroll} style="max-height: 70vh; overflow-y: auto;">
+  <div class="schedule-grid" style="grid-template-columns: 180px repeat({studios.length}, 1fr); min-width: {180 + studios.length * 120}px;">
     <!-- Header Row -->
-    <div class="sticky-col header day-time-header">{day}</div>
+    <div class="sticky-col header day-time-header">Day / Time</div>
     {#each studios as studio}
       <div class="header studio-header">{studio}</div>
     {/each}
 
     <!-- Time Rows -->
-    {#each times as time, rowIdx}
-      <div class="sticky-col time-cell">{time}</div>
+    {#each visibleRows as { date, time, dayIdx, timeIdx } }
+      <div class="sticky-col time-cell">{formatDate(date)} {time}</div>
       {#each studios as studio, colIdx}
-        <div class="slot-cell {isBooked(rowIdx, colIdx) ? 'booked' : ''}"></div>
+        <div class="slot-cell {isBooked(dayIdx, timeIdx, colIdx) ? 'booked' : ''}"></div>
       {/each}
     {/each}
   </div>
@@ -49,8 +88,6 @@
 }
 .schedule-grid {
   display: grid;
-  grid-template-columns: 120px repeat(5, 1fr);
-  min-width: 700px;
   border-collapse: separate;
 }
 .header {
