@@ -1,16 +1,39 @@
-FROM node:22-slim
-
-ENV NPM_CONFIG_UPDATE_NOTIFIER=false
-ENV NPM_CONFIG_FUND=false
+FROM oven/bun:latest as builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# Copy package files
+COPY package.json ./
 
-RUN npm ci --legacy-peer-deps
+# Install dependencies with bun
+RUN bun install --frozen-lockfile
 
-COPY . ./
+# Copy the rest of the app
+COPY . .
 
-RUN npm run build
+# Build the app with bun
+RUN bun run build
 
-ENTRYPOINT ["node", "build/index.js"]
+# Stage 2: Serve the app
+FROM oven/bun:latest as runtime
+
+WORKDIR /app
+
+# For a static build (if you're using adapter-static)
+RUN bun install -g serve
+COPY --from=builder /app/build ./build
+
+# For a server build (if you're using adapter-node)
+# COPY --from=builder /app/package.json ./
+# COPY --from=builder /app/build ./build
+# RUN bun install --production
+
+# Environment variables
+ENV PORT=3000
+ENV HOST=0.0.0.0
+
+# Static sites use serve
+CMD ["serve", "build", "-p", "3000", "-s"]
+
+# For server builds use this instead:
+# CMD ["bun", "build"]
