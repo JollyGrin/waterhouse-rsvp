@@ -4,11 +4,6 @@
 
 	const studios: string[] = ['Studio 1', 'Studio 2', 'Studio 3', 'Studio 4', 'Studio 5'];
 	const times: string[] = [
-		'05:00',
-		'06:00',
-		'07:00',
-		'08:00',
-		'09:00',
 		'10:00',
 		'11:00',
 		'12:00',
@@ -21,8 +16,7 @@
 		'19:00',
 		'20:00',
 		'21:00',
-		'22:00',
-		'23:00'
+		'22:00'
 	];
 
 	// Helper to format date as 'Tue, Apr 22'
@@ -95,37 +89,28 @@
 
 	function handleTileClick(dayIdx: number, timeIdx: number, studioIdx: number) {
 		if (isBooked(dayIdx, timeIdx, studioIdx)) return;
-		// Start new selection or clear
-		if (
-			!selection ||
-			selection.dayIdx !== dayIdx ||
-			selection.studioIdx !== studioIdx ||
-			timeIdx < selection.startHourIdx ||
-			timeIdx > selection.endHourIdx
-		) {
-			selection = {
-				dayIdx,
-				studioIdx,
-				startHourIdx: timeIdx,
-				endHourIdx: timeIdx
-			};
-		} else {
-			// Deselect
-			selection = null;
+		// Always select a block of up to 4 consecutive available hours
+		const maxBlock = 4;
+		let endHourIdx = timeIdx;
+		for (let i = 1; i < maxBlock; i++) {
+			const nextIdx = timeIdx + i;
+			if (nextIdx >= times.length) break;
+			if (isBooked(dayIdx, nextIdx, studioIdx)) break;
+			endHourIdx = nextIdx;
 		}
+		selection = {
+			dayIdx,
+			studioIdx,
+			startHourIdx: timeIdx,
+			endHourIdx
+		};
 	}
 
+	// Hover extension logic is no longer needed
 	function handleTileMouseEnter(dayIdx: number, timeIdx: number, studioIdx: number) {
-		if (!selection) return;
-		if (
-			selection.dayIdx === dayIdx &&
-			selection.studioIdx === studioIdx &&
-			timeIdx === selection.endHourIdx + 1 &&
-			!isBooked(dayIdx, timeIdx, studioIdx)
-		) {
-			selection.endHourIdx = timeIdx;
-		}
+		/* disabled for 4-hour block selection */
 	}
+
 
 	function clearSelection() {
 		selection = null;
@@ -154,7 +139,7 @@
 </script>
 
 {#if isBookingModalOpen}
-	<ModalBooking onClose={() => (isBookingModalOpen = false)} />
+	<ModalBooking onClose={() => (isBookingModalOpen = false)} {selection} />
 {/if}
 
 <div
@@ -225,8 +210,11 @@
 
 		{#if selection}
 			<button
-				class="fixed right-6 bottom-6 z-50 rounded-full bg-emerald-500 px-6 py-3 text-lg font-bold text-white shadow-lg transition hover:bg-emerald-600"
-				onclick={clearSelection}
+				class="fixed right-6 bottom-6 z-20 rounded-full bg-emerald-500 px-6 py-3 text-lg font-bold text-white shadow-lg transition hover:bg-emerald-600"
+				onclick={() => {
+					isBookingModalOpen = true;
+					// clearSelection(); // TODO: REMOVE THIS TO SEND DATA, need to add clear inside the modal?
+				}}
 			>
 				{selection.endHourIdx - selection.startHourIdx + 1} Booking{selection.endHourIdx -
 					selection.startHourIdx +
