@@ -113,6 +113,8 @@ export class FixedSlotRule extends BaseRule {
       };
     }
     
+  
+    
     // Find the slot that contains this time
     const slot = this.slots.find(([start, end]) => 
       timeIdx >= start && timeIdx < end
@@ -170,6 +172,8 @@ export class FixedSlotRule extends BaseRule {
     if (!this.applies(dayIdx, studioIdx, 0, 23)) {
       return existingSelection; // Can't extend - rules don't apply
     }
+    
+
     
     // Determine if we're extending forward or backward
     const isForwardExtension = newTimeIdx > endHourIdx;
@@ -562,6 +566,173 @@ export class MinMaxDurationRule extends BaseRule {
 }
 
 /**
+ * Time Range Rule - Rules that apply to specific time ranges
+ * Example: Early morning hours (before 10am) can be booked in 1-hour increments
+ */
+export class TimeRangeRule extends BaseRule {
+  startHour: number;
+  endHour: number;
+  incrementSize: number;
+  
+  constructor(config: {
+    name: string;
+    days: number[];
+    studios: (number | string)[];
+    startHour: number;
+    endHour: number;
+    incrementSize: number;
+  }) {
+    super(config);
+    this.startHour = config.startHour;
+    this.endHour = config.endHour;
+    this.incrementSize = config.incrementSize;
+  }
+  
+  /**
+   * Override the applies method to check if the time is within the specified range
+   */
+  applies(dayIdx: number, studioIdx: number, startHour: number, endHour: number): boolean {
+    const baseApplies = super.applies(dayIdx, studioIdx, startHour, endHour);
+    
+    // If the base rule doesn't apply, this rule doesn't apply
+    if (!baseApplies) return false;
+    
+    // Check if any part of the time range overlaps with our defined range
+    // This ensures early morning rule takes precedence for times before 10am
+    const hasOverlap = (
+      (startHour >= this.startHour && startHour < this.endHour) || 
+      (endHour >= this.startHour && endHour < this.endHour) ||
+      (startHour <= this.startHour && endHour >= this.endHour)
+    );
+    
+    return hasOverlap;
+  }
+  
+  validate(dayIdx: number, studioIdx: number, startHour: number, endHour: number): boolean {
+    if (!this.applies(dayIdx, studioIdx, startHour, endHour)) return true;
+    
+    // The duration must be a multiple of the increment size
+    const duration = endHour - startHour + 1;
+    return duration % this.incrementSize === 0;
+  }
+  
+  calculateSelection(dayIdx: number, timeIdx: number, studioIdx: number, isBooked: (dayIdx: number, timeIdx: number, studioIdx: number) => boolean): Selection {
+    if (!this.applies(dayIdx, studioIdx, timeIdx, timeIdx)) {
+      return {
+        dayIdx,
+        studioIdx,
+        startHourIdx: timeIdx,
+        endHourIdx: timeIdx
+      };
+    }
+    
+    // For increment size of 1, just return single hour selection
+    if (this.incrementSize === 1) {
+      return {
+        dayIdx,
+        studioIdx,
+        startHourIdx: timeIdx,
+        endHourIdx: timeIdx
+      };
+    }
+    
+    // For larger increment sizes, calculate a block of that size
+    let endHourIdx = timeIdx;
+    for (let i = 1; i < this.incrementSize; i++) {
+      const nextIdx = timeIdx + i;
+      if (nextIdx >= this.endHour) break;
+      if (isBooked(dayIdx, nextIdx, studioIdx)) break;
+      endHourIdx = nextIdx;
+    }
+    
+    return {
+      dayIdx,
+      studioIdx,
+      startHourIdx: timeIdx,
+      endHourIdx
+    };
+  }
+  
+  extendSelection(existingSelection: Selection, newTimeIdx: number, isBooked: (dayIdx: number, timeIdx: number, studioIdx: number) => boolean): Selection {
+    if (!existingSelection) return null;
+    
+    const selection = existingSelection as NonNullable<Selection>;
+    const { dayIdx, studioIdx, startHourIdx, endHourIdx } = selection;
+    
+    // Only allow extending in the same day and studio
+    if (!this.applies(dayIdx, studioIdx, Math.min(startHourIdx, newTimeIdx), Math.max(endHourIdx, newTimeIdx))) {
+      return existingSelection; // Can't extend - rules don't apply
+    }
+    
+    // Determine if we're extending forward or backward
+    const isForwardExtension = newTimeIdx === endHourIdx + 1;
+    const isBackwardExtension = newTimeIdx === startHourIdx - 1;
+    
+    if (!isForwardExtension && !isBackwardExtension) {
+      return existingSelection; // Only allow extending to adjacent hours
+    }
+    
+    // For 1-hour increments, allow extending one hour at a time
+    if (this.incrementSize === 1) {
+      if (isForwardExtension && !isBooked(dayIdx, newTimeIdx, studioIdx)) {
+        return {
+          dayIdx,
+          studioIdx,
+          startHourIdx,
+          endHourIdx: newTimeIdx
+        };
+      }
+      
+      if (isBackwardExtension && !isBooked(dayIdx, newTimeIdx, studioIdx)) {
+        return {
+          dayIdx,
+          studioIdx,
+          startHourIdx: newTimeIdx,
+          endHourIdx
+        };
+      }
+    } else {
+      // For larger increments, extend by that increment size
+      if (isForwardExtension) {
+        const newEndHourIdx = endHourIdx + this.incrementSize;
+        if (newEndHourIdx >= this.endHour) return existingSelection;
+        
+        // Check if the extended range is available
+        for (let i = endHourIdx + 1; i <= newEndHourIdx; i++) {
+          if (isBooked(dayIdx, i, studioIdx)) return existingSelection;
+        }
+        
+        return {
+          dayIdx,
+          studioIdx,
+          startHourIdx,
+          endHourIdx: newEndHourIdx
+        };
+      }
+      
+      if (isBackwardExtension) {
+        const newStartHourIdx = startHourIdx - this.incrementSize;
+        if (newStartHourIdx < this.startHour) return existingSelection;
+        
+        // Check if the extended range is available
+        for (let i = newStartHourIdx; i < startHourIdx; i++) {
+          if (isBooked(dayIdx, i, studioIdx)) return existingSelection;
+        }
+        
+        return {
+          dayIdx,
+          studioIdx,
+          startHourIdx: newStartHourIdx,
+          endHourIdx
+        };
+      }
+    }
+    
+    return existingSelection; // No change
+  }
+}
+
+/**
  * Booking Rule Engine - Manages and applies all booking rules
  */
 export class BookingRuleEngine {
@@ -575,21 +746,34 @@ export class BookingRuleEngine {
     this.rules.push(rule);
   }
   
-  getApplicableRules(dayIdx: number, studioIdx: number): BookingRule[] {
-    return this.rules.filter(rule => 
-      rule.applies(dayIdx, studioIdx, 0, 23)
+  getApplicableRules(dayIdx: number, studioIdx: number, timeIdx?: number): BookingRule[] {
+    // First, filter rules that apply to this day and studio
+    const applicableRules = this.rules.filter(rule => 
+      rule.applies(dayIdx, studioIdx, timeIdx !== undefined ? timeIdx : 0, timeIdx !== undefined ? timeIdx : 23)
     );
+    
+    // If dealing with a specific time, prioritize time-range specific rules
+    if (timeIdx !== undefined) {
+      const timeRangeRules = applicableRules.filter(rule => rule instanceof TimeRangeRule);
+      const otherRules = applicableRules.filter(rule => !(rule instanceof TimeRangeRule));
+      
+      // Return time range rules first, then other rules
+      return [...timeRangeRules, ...otherRules];
+    }
+    
+    return applicableRules;
   }
   
   calculateSelection(dayIdx: number, timeIdx: number, studioIdx: number, isBooked: (dayIdx: number, timeIdx: number, studioIdx: number) => boolean): Selection {
-    const applicableRules = this.getApplicableRules(dayIdx, studioIdx);
+    // Get applicable rules, prioritizing time-range specific rules if applicable
+    const applicableRules = this.getApplicableRules(dayIdx, studioIdx, timeIdx);
     
     if (applicableRules.length === 0) {
       // Default rule (single hour selection)
       return { dayIdx, studioIdx, startHourIdx: timeIdx, endHourIdx: timeIdx };
     }
     
-    // Apply the first matching rule (or implement priority logic if needed)
+    // Apply the first matching rule (now with proper prioritization)
     return applicableRules[0].calculateSelection(dayIdx, timeIdx, studioIdx, isBooked);
   }
   
@@ -600,14 +784,15 @@ export class BookingRuleEngine {
     if (!existingSelection) return null;
     
     const { dayIdx, studioIdx } = existingSelection;
-    const applicableRules = this.getApplicableRules(dayIdx, studioIdx);
+    // Also prioritize time-range rules for extensions
+    const applicableRules = this.getApplicableRules(dayIdx, studioIdx, newTimeIdx);
     
     if (applicableRules.length === 0) {
       // No applicable rules, so use default extension behavior
       return this.extendByOneHour(existingSelection, newTimeIdx, isBooked);
     }
     
-    // Apply the first rule's extension logic
+    // Apply the first rule's extension logic (now with proper prioritization)
     return applicableRules[0].extendSelection(existingSelection, newTimeIdx, isBooked);
   }
   
