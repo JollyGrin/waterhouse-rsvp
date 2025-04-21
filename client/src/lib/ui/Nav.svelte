@@ -12,7 +12,9 @@
 	const userName = $derived(clerk.user?.username ?? clerk.user?.fullName);
 </script>
 
-<header class="flex flex-col-reverse items-center justify-between gap-4 p-4 md:flex-row">
+<header
+	class="bg-brand-dark flex min-h-[72px] flex-col-reverse items-center justify-between gap-4 p-4 md:flex-row"
+>
 	<p class="font-jersey hidden text-4xl md:inline">waterhouse</p>
 	<div class="flex items-center gap-4 text-xl font-bold select-none">
 		<span> RSVP </span>

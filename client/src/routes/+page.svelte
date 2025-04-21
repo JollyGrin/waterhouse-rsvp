@@ -7,7 +7,9 @@
 	<title>Waterhouse RSVP</title>
 </svelte:head>
 
-<Nav />
-<div class="container mx-auto h-[800px]">
-	<ScheduleGrid />
+<div class="flex h-[100svh] flex-col">
+	<Nav />
+	<div class="container mx-auto mt-2 h-[calc(100svh-80px)]">
+		<ScheduleGrid />
+	</div>
 </div>

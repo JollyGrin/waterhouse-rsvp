@@ -104,9 +104,9 @@
 {/if}
 
 <div
-	class="bg-brand-back h-full overflow-x-auto overflow-y-auto rounded-lg p-2"
+	class="bg-brand-back h-full overflow-x-auto overflow-y-auto rounded-lg"
 	bind:this={gridEl}
-	on:scroll={handleScroll}
+	onscroll={handleScroll}
 >
 	<div
 		class="grid"
