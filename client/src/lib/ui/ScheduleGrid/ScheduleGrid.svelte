@@ -97,7 +97,7 @@
 >
 	<div
 		class="grid"
-		style="grid-template-columns: 140px repeat({studios.length}, 1fr); min-width: {140 +
+		style="grid-template-columns: 75px repeat({studios.length}, 1fr); min-width: {140 +
 			studios.length * 120}px; border-collapse: separate;"
 	>
 		<!-- Header Row -->
@@ -115,7 +115,7 @@
 		{#each Array(numDays) as _, dayIdx}
 			<!-- Sticky Date Header Row -->
 			<div
-				class="bg-brand-back text-brand-highlight border-brand-shadow sticky top-[-10px] left-0 z-50 border-r-2 px-2 py-1 font-bold"
+				class="bg-brand-back text-brand-highlight border-brand-shadow sticky top-[-10px] left-0 z-50 border-r-2 px-2 py-1 text-end text-xs font-bold"
 			>
 				{formatDate(
 					new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + dayIdx)
@@ -126,7 +126,7 @@
 			{/each}
 			{#each times as time, timeIdx}
 				<div
-					class="bg-brand-back text-brand-fore border-brand-shadow sticky left-0 z-10 justify-self-end border-r-1 px-2 py-1 text-sm font-bold"
+					class="bg-brand-back text-brand-fore border-brand-shadow sticky left-0 z-10 justify-self-end border-r-1 px-2 py-1 font-mono text-sm font-bold"
 				>
 					{time}
 				</div>
@@ -136,7 +136,7 @@
 						class:!bg-[var(--color-brand-highlight)]={isBooked(dayIdx, timeIdx, colIdx)}
 					>
 						<span
-							class="text-brand-fore/5 group-hover:text-brand-fore/25 transition-all"
+							class="text-brand-fore/5 group-hover:text-brand-fore/25 font-mono transition-all"
 							class:text-emerald-500={isBooked(dayIdx, timeIdx, colIdx)}
 						>
 							{time}
