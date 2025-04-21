@@ -88,7 +88,17 @@
 		if (isBooked(dayIdx, timeIdx, studioIdx)) return;
 		if (isSelected(dayIdx, timeIdx, studioIdx)) return clearSelection();
 
-		// Use the rule engine to calculate a valid selection based on applicable rules
+		// Check if we're extending an existing selection
+		if (selection && selection.dayIdx === dayIdx && selection.studioIdx === studioIdx) {
+			// Attempting to extend selection
+			if (timeIdx === selection.endHourIdx + 1 || timeIdx === selection.startHourIdx - 1) {
+				// Adjacent to current selection - try to extend
+				selection = ruleEngine.extendSelection(selection, timeIdx, isBooked);
+				return;
+			}
+		}
+
+		// Otherwise, create a new selection based on applicable rules
 		selection = ruleEngine.calculateSelection(dayIdx, timeIdx, studioIdx, isBooked);
 	}
 

@@ -47,6 +47,39 @@ export class BaseRule implements BookingRule {
       endHourIdx: timeIdx
     };
   }
+  
+  /**
+   * Extends an existing selection when a user clicks on an adjacent time slot
+   */
+  extendSelection(existingSelection: Selection, newTimeIdx: number, isBooked: (dayIdx: number, timeIdx: number, studioIdx: number) => boolean): Selection {
+    if (!existingSelection) return null;
+    
+    const { dayIdx, studioIdx, startHourIdx, endHourIdx } = existingSelection;
+    
+    // Only allow extending in the same day and studio
+    if (!this.applies(dayIdx, studioIdx, 0, 23)) {
+      return existingSelection; // Can't extend - rules don't apply
+    }
+    
+    // Check if we're trying to extend by adding an adjacent hour
+    const isForwardExtension = newTimeIdx === endHourIdx + 1;
+    const isBackwardExtension = newTimeIdx === startHourIdx - 1;
+    
+    if (!isForwardExtension && !isBackwardExtension) {
+      return existingSelection; // Only allow extending to adjacent hours
+    }
+    
+    // Base rule allows extending by one hour in either direction
+    if (isForwardExtension && !isBooked(dayIdx, newTimeIdx, studioIdx)) {
+      return { ...existingSelection, endHourIdx: newTimeIdx };
+    }
+    
+    if (isBackwardExtension && !isBooked(dayIdx, newTimeIdx, studioIdx)) {
+      return { ...existingSelection, startHourIdx: newTimeIdx };
+    }
+    
+    return existingSelection; // No change if extending into a booked slot
+  }
 }
 
 /**
@@ -122,6 +155,95 @@ export class FixedSlotRule extends BaseRule {
       startHourIdx: slot[0],
       endHourIdx: slot[1] - 1
     };
+  }
+  
+  /**
+   * For Fixed Slot rules, we allow extending to the next available slot
+   * if it's directly adjacent to the current selection.
+   */
+  extendSelection(existingSelection: Selection, newTimeIdx: number, isBooked: (dayIdx: number, timeIdx: number, studioIdx: number) => boolean): Selection {
+    if (!existingSelection) return null;
+    
+    const { dayIdx, studioIdx, startHourIdx, endHourIdx } = existingSelection;
+    
+    // Only allow extending in the same day and studio
+    if (!this.applies(dayIdx, studioIdx, 0, 23)) {
+      return existingSelection; // Can't extend - rules don't apply
+    }
+    
+    // Determine if we're extending forward or backward
+    const isForwardExtension = newTimeIdx > endHourIdx;
+    const isBackwardExtension = newTimeIdx < startHourIdx;
+    
+    if (!isForwardExtension && !isBackwardExtension) {
+      return existingSelection;
+    }
+    
+    // Check if the current selection spans one or more complete slots
+    // First, check if it starts at the beginning of a slot
+    const startsAtSlotBeginning = this.slots.some(([start]) => startHourIdx === start);
+    
+    // Then check if it ends at the end of a slot
+    const endsAtSlotEnd = this.slots.some(([_, end]) => endHourIdx === end - 1);
+    
+    // Alternatively, check if it spans multiple full slots
+    const isMultipleOfSlotSize = this.slots.length > 0 && this.slots[0][1] - this.slots[0][0] > 0 && 
+                                 (endHourIdx - startHourIdx + 1) % (this.slots[0][1] - this.slots[0][0]) === 0;
+    
+    if (!startsAtSlotBeginning && !endsAtSlotEnd && !isMultipleOfSlotSize) {
+      // Current selection doesn't align with slot boundaries - don't extend
+      return existingSelection;
+    }
+    
+    if (isForwardExtension) {
+      // Find the next slot after the current slot
+      const nextSlot = this.slots.find(([start]) => start === endHourIdx + 1);
+      
+      if (!nextSlot) {
+        return existingSelection; // No adjacent slot
+      }
+      
+      // Check if the next slot is available
+      for (let i = nextSlot[0]; i < nextSlot[1]; i++) {
+        if (isBooked(dayIdx, i, studioIdx)) {
+          return existingSelection; // Slot is partially booked
+        }
+      }
+      
+      // Extend to include the next slot
+      return {
+        dayIdx,
+        studioIdx,
+        startHourIdx,
+        endHourIdx: nextSlot[1] - 1
+      };
+    }
+    
+    if (isBackwardExtension) {
+      // Find the previous slot before the current slot
+      const prevSlot = this.slots.find(([_, end]) => end === startHourIdx);
+      
+      if (!prevSlot) {
+        return existingSelection; // No adjacent slot
+      }
+      
+      // Check if the previous slot is available
+      for (let i = prevSlot[0]; i < prevSlot[1]; i++) {
+        if (isBooked(dayIdx, i, studioIdx)) {
+          return existingSelection; // Slot is partially booked
+        }
+      }
+      
+      // Extend to include the previous slot
+      return {
+        dayIdx,
+        studioIdx,
+        startHourIdx: prevSlot[0],
+        endHourIdx
+      };
+    }
+    
+    return existingSelection; // No change
   }
 }
 
@@ -204,6 +326,86 @@ export class FixedDurationRule extends BaseRule {
       endHourIdx: end
     };
   }
+  
+  /**
+   * For FixedDurationRule, extensions must be in blocks of the fixed duration
+   */
+  extendSelection(existingSelection: Selection, newTimeIdx: number, isBooked: (dayIdx: number, timeIdx: number, studioIdx: number) => boolean): Selection {
+    if (!existingSelection) return null;
+    
+    const { dayIdx, studioIdx, startHourIdx, endHourIdx } = existingSelection;
+    
+    // Only allow extending in the same day and studio
+    if (!this.applies(dayIdx, studioIdx, 0, 23)) {
+      return existingSelection; // Can't extend - rules don't apply
+    }
+    
+    // Check if the current selection is valid for this rule
+    const currentDuration = endHourIdx - startHourIdx + 1;
+    
+    // Allow extending if the current selection is a multiple of the fixed duration
+    // This supports multi-block selections (e.g., 8 hours from two 4-hour blocks)
+    if (currentDuration % this.duration !== 0) {
+      // Current selection doesn't align with the fixed duration blocks
+      return existingSelection;
+    }
+    
+    // Determine if we're extending forward or backward
+    const isForwardExtension = newTimeIdx === endHourIdx + 1;
+    const isBackwardExtension = newTimeIdx === startHourIdx - 1;
+    
+    if (!isForwardExtension && !isBackwardExtension) {
+      return existingSelection; // Only allow extending to adjacent hours
+    }
+    
+    if (isForwardExtension) {
+      // For fixed duration, we can only extend by a full block
+      const newEndHourIdx = endHourIdx + this.duration;
+      
+      // Check if extension is within allowed hours
+      if (newEndHourIdx >= this.endHour) {
+        return existingSelection; // Outside allowed time range
+      }
+      
+      // Check if the extended block is available
+      for (let i = endHourIdx + 1; i <= newEndHourIdx; i++) {
+        if (isBooked(dayIdx, i, studioIdx)) {
+          return existingSelection; // Can't extend - time not available
+        }
+      }
+      
+      // Valid extension
+      return {
+        ...existingSelection,
+        endHourIdx: newEndHourIdx
+      };
+    }
+    
+    if (isBackwardExtension) {
+      // Calculate the new start time (startHourIdx - duration)
+      const newStartHourIdx = startHourIdx - this.duration;
+      
+      // Check if extension is within allowed hours
+      if (newStartHourIdx < this.startHour) {
+        return existingSelection; // Outside allowed time range
+      }
+      
+      // Check if the extended block is available
+      for (let i = newStartHourIdx; i < startHourIdx; i++) {
+        if (isBooked(dayIdx, i, studioIdx)) {
+          return existingSelection; // Can't extend - time not available
+        }
+      }
+      
+      // Valid extension
+      return {
+        ...existingSelection,
+        startHourIdx: newStartHourIdx
+      };
+    }
+    
+    return existingSelection; // No change
+  }
 }
 
 /**
@@ -278,6 +480,85 @@ export class MinMaxDurationRule extends BaseRule {
       endHourIdx: end
     };
   }
+  
+  /**
+   * For MinMaxDurationRule, extensions are allowed as long as the total duration
+   * stays within the min/max range
+   */
+  extendSelection(existingSelection: Selection, newTimeIdx: number, isBooked: (dayIdx: number, timeIdx: number, studioIdx: number) => boolean): Selection {
+    if (!existingSelection) return null;
+    
+    const { dayIdx, studioIdx, startHourIdx, endHourIdx } = existingSelection;
+    
+    // Only allow extending in the same day and studio
+    if (!this.applies(dayIdx, studioIdx, 0, 23)) {
+      return existingSelection; // Can't extend - rules don't apply
+    }
+    
+    // Check if current selection is within time bounds
+    if (startHourIdx < this.startHour || endHourIdx >= this.endHour) {
+      return existingSelection; // Outside allowed time range
+    }
+    
+    // Current duration
+    const currentDuration = endHourIdx - startHourIdx + 1;
+    
+    // Determine if we're extending forward or backward
+    const isForwardExtension = newTimeIdx === endHourIdx + 1;
+    const isBackwardExtension = newTimeIdx === startHourIdx - 1;
+    
+    if (!isForwardExtension && !isBackwardExtension) {
+      return existingSelection; // Only allow extending to adjacent hours
+    }
+    
+    if (isForwardExtension) {
+      // Check if adding one more hour exceeds max duration
+      if (currentDuration >= this.maxDuration) {
+        return existingSelection; // Already at max duration
+      }
+      
+      // Check if extension is within allowed hours
+      if (newTimeIdx >= this.endHour) {
+        return existingSelection; // Outside allowed time range
+      }
+      
+      // Check if the time slot is available
+      if (isBooked(dayIdx, newTimeIdx, studioIdx)) {
+        return existingSelection; // Time not available
+      }
+      
+      // Valid extension
+      return {
+        ...existingSelection,
+        endHourIdx: newTimeIdx
+      };
+    }
+    
+    if (isBackwardExtension) {
+      // Check if adding one more hour exceeds max duration
+      if (currentDuration >= this.maxDuration) {
+        return existingSelection; // Already at max duration
+      }
+      
+      // Check if extension is within allowed hours
+      if (newTimeIdx < this.startHour) {
+        return existingSelection; // Outside allowed time range
+      }
+      
+      // Check if the time slot is available
+      if (isBooked(dayIdx, newTimeIdx, studioIdx)) {
+        return existingSelection; // Time not available
+      }
+      
+      // Valid extension
+      return {
+        ...existingSelection,
+        startHourIdx: newTimeIdx
+      };
+    }
+    
+    return existingSelection; // No change
+  }
 }
 
 /**
@@ -310,6 +591,63 @@ export class BookingRuleEngine {
     
     // Apply the first matching rule (or implement priority logic if needed)
     return applicableRules[0].calculateSelection(dayIdx, timeIdx, studioIdx, isBooked);
+  }
+  
+  /**
+   * Extend an existing selection to include a new time
+   */
+  extendSelection(existingSelection: Selection, newTimeIdx: number, isBooked: (dayIdx: number, timeIdx: number, studioIdx: number) => boolean): Selection {
+    if (!existingSelection) return null;
+    
+    const { dayIdx, studioIdx } = existingSelection;
+    const applicableRules = this.getApplicableRules(dayIdx, studioIdx);
+    
+    if (applicableRules.length === 0) {
+      // No applicable rules, so use default extension behavior
+      return this.extendByOneHour(existingSelection, newTimeIdx, isBooked);
+    }
+    
+    // Apply the first rule's extension logic
+    return applicableRules[0].extendSelection(existingSelection, newTimeIdx, isBooked);
+  }
+  
+  /**
+   * Default behavior to extend by one hour
+   */
+  private extendByOneHour(existingSelection: Selection, newTimeIdx: number, isBooked: (dayIdx: number, timeIdx: number, studioIdx: number) => boolean): Selection {
+    if (!existingSelection) return null;
+    
+    // Ensure we have a non-null selection
+    const selection = existingSelection as NonNullable<Selection>;
+    const { dayIdx, studioIdx, startHourIdx, endHourIdx } = selection;
+    
+    // Check if we're trying to extend by adding an adjacent hour
+    const isForwardExtension = newTimeIdx === endHourIdx + 1;
+    const isBackwardExtension = newTimeIdx === startHourIdx - 1;
+    
+    if (!isForwardExtension && !isBackwardExtension) {
+      return existingSelection; // Only allow extending to adjacent hours
+    }
+    
+    if (isForwardExtension && !isBooked(dayIdx, newTimeIdx, studioIdx)) {
+      return {
+        dayIdx,
+        studioIdx,
+        startHourIdx,
+        endHourIdx: newTimeIdx
+      };
+    }
+    
+    if (isBackwardExtension && !isBooked(dayIdx, newTimeIdx, studioIdx)) {
+      return {
+        dayIdx,
+        studioIdx,
+        startHourIdx: newTimeIdx,
+        endHourIdx
+      };
+    }
+    
+    return existingSelection; // No change
   }
   
   validateSelection(selection: Selection): boolean {

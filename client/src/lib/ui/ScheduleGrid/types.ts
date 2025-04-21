@@ -13,6 +13,7 @@ export interface BookingRule {
   applies(dayIdx: number, studioIdx: number, startHour: number, endHour: number): boolean;
   validate(dayIdx: number, studioIdx: number, startHour: number, endHour: number): boolean;
   calculateSelection(dayIdx: number, timeIdx: number, studioIdx: number, isBooked: (dayIdx: number, timeIdx: number, studioIdx: number) => boolean): Selection;
+  extendSelection(existingSelection: Selection, newTimeIdx: number, isBooked: (dayIdx: number, timeIdx: number, studioIdx: number) => boolean): Selection;
 }
 
 // Fixed slot rule (only specific time windows)
