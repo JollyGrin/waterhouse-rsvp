@@ -115,7 +115,7 @@
 		{#each Array(numDays) as _, dayIdx}
 			<!-- Sticky Date Header Row -->
 			<div
-				class="bg-brand-back text-brand-highlight border-brand-shadow sticky top-[-10px] left-0 z-50 border-r-2 px-2 py-1 text-end text-xs font-bold"
+				class="bg-brand-back text-brand-highlight border-brand-shadow text-md sticky top-[-10px] left-0 z-50 border-r-2 px-2 py-1 text-end font-bold"
 			>
 				{formatDate(
 					new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + dayIdx)
