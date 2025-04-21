@@ -1,31 +1,16 @@
-# Use official Bun image
-FROM oven/bun:1.1.13 as base
+FROM node:22-slim
+
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+ENV NPM_CONFIG_FUND=false
 
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY bun.lock package.json ./
-RUN bun install
+COPY package.json package-lock.json ./
 
-# Copy the rest of the project
-COPY . .
+RUN npm ci --legacy-peer-deps
 
-# Build the app (adjust for your actual build command)
-RUN bun run build
+COPY . ./
 
-# Final image for running (optional for static hosting)
-FROM oven/bun:1.1.13 as runner
-WORKDIR /app
+RUN npm run build
 
-COPY --from=base /app ./
-
-# If your app uses a dev server (like for SSR)
-# CMD ["bun", "run", "preview"]
-
-# If you built a static site (e.g. using `adapter-static`)
-# you can serve it with something like serve or wrangler etc.
-# Example:
-# RUN bun add serve
-# CMD ["bun", "x", "serve", "build"]
-
-CMD ["bun", "run", "preview"]
+ENTRYPOINT ["node", "build/index.js"]
