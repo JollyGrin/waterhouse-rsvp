@@ -62,18 +62,24 @@
 </script>
 
 <div class="schedule-outer" bind:this={gridEl} on:scroll={handleScroll} style="max-height: 70vh; overflow-y: auto;">
-  <div class="schedule-grid" style="grid-template-columns: 180px repeat({studios.length}, 1fr); min-width: {180 + studios.length * 120}px;">
+  <div class="schedule-grid" style="grid-template-columns: 140px repeat({studios.length}, 1fr); min-width: {140 + studios.length * 120}px;">
     <!-- Header Row -->
-    <div class="sticky-col header day-time-header">Day / Time</div>
+    <div class="sticky-col header day-time-header"></div>
     {#each studios as studio}
       <div class="header studio-header">{studio}</div>
     {/each}
 
-    <!-- Time Rows -->
-    {#each visibleRows as { date, time, dayIdx, timeIdx } }
-      <div class="sticky-col time-cell">{formatDate(date)} {time}</div>
-      {#each studios as studio, colIdx}
-        <div class="slot-cell {isBooked(dayIdx, timeIdx, colIdx) ? 'booked' : ''}"></div>
+    {#each Array(numDays) as _, dayIdx}
+      <!-- Sticky Date Header Row -->
+      <div class="sticky-col sticky-date-row">{formatDate(new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + dayIdx))}</div>
+      {#each studios as studio}
+        <div class="sticky-date-row"></div>
+      {/each}
+      {#each times as time, timeIdx}
+        <div class="sticky-col time-cell">{time}</div>
+        {#each studios as studio, colIdx}
+          <div class="slot-cell {isBooked(dayIdx, timeIdx, colIdx) ? 'booked' : ''}"></div>
+        {/each}
       {/each}
     {/each}
   </div>
@@ -107,6 +113,18 @@
   z-index: 3;
   border-right: 2px solid #e0e3e8;
 }
+.sticky-date-row {
+  position: sticky;
+  top: 52px;
+  background: #f5f6f8;
+  font-weight: bold;
+  font-size: 1.1rem;
+  padding: 8px 10px 8px 10px;
+  border-bottom: 2px solid #e0e3e8;
+  border-right: 2px solid #e0e3e8;
+  z-index: 4;
+}
+
 .day-time-header {
   text-align: left;
   font-size: 1rem;
