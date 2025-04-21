@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+
+@theme {
+	--font-jersey: 'Jersey 10';
+	--font-geist: 'Geist';
+
+	--color-brand-fore: #e8ecf1;
+	--color-brand-highlight: var(--color-emerald-400);
+	--color-brand-back: #2d303e;
+	--color-brand-dark: #1e1e1e;
+	--color-brand-shadow: #515878;
+
+	--animate-breathing: breathing 10s ease-in-out infinite;
+	--animate-breath-once: breathing 10s ease-in-out 1;
+	@keyframes breathing {
+		0%,
+		100% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.025);
+		}
+	}
+}
+
+html,
+body {
+	font-family: var(--font-geist);
+	background: var(--color-brand-back);
+	color: var(--color-brand-fore);
+	-webkit-font-smoothing: antialiased;
+}
