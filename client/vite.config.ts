@@ -11,5 +11,13 @@ export default defineConfig({
 			project: './project.inlang',
 			outdir: './src/lib/paraglide'
 		})
-	]
+	],
+	preview: {
+		allowedHosts: [
+			'localhost',
+			'127.0.0.1',
+			'0.0.0.0',
+			'waterhouse-rsvp-production.up.railway.app'
+		]
+	}
 });
