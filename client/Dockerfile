@@ -19,4 +19,4 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Start the application (adapter-node creates a standalone server)
-CMD ["bun", "build"]
+CMD ["bun", "./build/index.js"]
