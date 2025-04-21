@@ -118,8 +118,8 @@
 		{#each Array(numDays) as _, dayIdx}
 			<!-- Sticky Date Header Row -->
 			<div
-				class="sticky left-0 z-20 border-r-2 px-2 py-1 font-bold"
-				style="top:52px; background: var(--color-brand-back); color: var(--color-brand-highlight); border-color: var(--color-brand-shadow); font-size: 1.1rem; font-family: var(--font-geist);"
+				class="sticky left-0 z-50 border-r-2 px-2 py-1 font-bold"
+				style="top:1px; background: var(--color-brand-back); color: var(--color-brand-highlight); border-color: var(--color-brand-shadow); font-size: 1.1rem; font-family: var(--font-geist);"
 			>
 				{formatDate(
 					new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + dayIdx)
