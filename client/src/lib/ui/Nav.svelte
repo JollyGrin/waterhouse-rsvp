@@ -25,7 +25,7 @@
 	</SignedOut>
 	<SignedIn>
 		<div class="flex items-center gap-2">
-			<span class="bg-brand-dark rounded-full px-4 py-1">Credits: 10</span>
+			<span class="bg-brand-fore/5 rounded-full px-4 py-1">Credits: 10</span>
 			<p class="text-xl font-bold">{userName}</p>
 			<UserButton />
 		</div>
