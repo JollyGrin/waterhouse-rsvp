@@ -853,4 +853,48 @@ export class BookingRuleEngine {
       )
     );
   }
+
+  /**
+   * Gets human-readable descriptions of all rules applicable to a specific studio
+   */
+  getStudioRuleDescriptions(studioIdx: number): string[] {
+    // Get all rules that could apply to this studio
+    const studioRules = this.rules.filter(rule => {
+      // Check if this rule applies to this studio
+      const appliesTo = rule.studios.length === 0 || // Empty means all studios
+                         rule.studios.includes(studioIdx) ||
+                         (typeof rule.studios[0] === 'string' && rule.studios.includes(`Studio ${studioIdx + 1}`));
+      return appliesTo;
+    });
+    
+    // Generate descriptions for each rule
+    return studioRules.map(rule => {
+      let description = '';
+
+      // Add rule name
+      description += rule.name;
+
+      // Add days if specified
+      if (rule.days && rule.days.length > 0) {
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const daysList = rule.days.map(day => dayNames[day % 7]).join(', ');
+        description += ` (${daysList})`;
+      }
+
+      // Add rule-specific details
+      if (rule instanceof TimeRangeRule) {
+        const timeRange = `${rule.startHour}:00-${rule.endHour}:00`;
+        description += `: ${rule.incrementSize}-hour blocks between ${timeRange}`;
+      } else if (rule instanceof FixedSlotRule) {
+        const slots = rule.slots.map(([start, end]) => `${start}:00-${end}:00`).join(', ');
+        description += `: Fixed time slots at ${slots}`;
+      } else if (rule instanceof FixedDurationRule) {
+        description += `: ${rule.duration}-hour blocks between ${rule.startHour}:00-${rule.endHour}:00`;
+      } else if (rule instanceof MinMaxDurationRule) {
+        description += `: ${rule.minDuration}-${rule.maxDuration} hour bookings between ${rule.startHour}:00-${rule.endHour}:00`;
+      }
+
+      return description;
+    });
+  }
 }

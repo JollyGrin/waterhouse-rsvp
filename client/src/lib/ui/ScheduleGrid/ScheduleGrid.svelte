@@ -168,11 +168,24 @@
 		<div
 			class="text-brand-fore bg-brand-back border-brand-shadow sticky top-0 left-0 z-30 border-r-2 border-b-2 px-2 py-1 text-center font-bold"
 		></div>
-		{#each studios as studio}
+		{#each studios as studio, studioIdx}
 			<div
-				class="bg-brand-back text-brand-for border-brand-shadow sticky top-[-10px] z-20 border-b-2 px-2 py-1 text-center font-bold"
+				class="bg-brand-back text-brand-for border-brand-shadow sticky top-[-10px] z-20 border-b-2 px-2 py-1 text-center font-bold relative group cursor-help"
 			>
 				{studio}
+				<!-- Studio rule tooltip -->
+				<div class="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+					<div class="font-bold mb-1 border-b border-gray-600 pb-1">Booking Rules</div>
+					{#if ruleEngine.getStudioRuleDescriptions(studioIdx).length > 0}
+						<ul class="list-disc pl-4 space-y-1 text-left">
+							{#each ruleEngine.getStudioRuleDescriptions(studioIdx) as ruleDescription}
+								<li>{ruleDescription}</li>
+							{/each}
+						</ul>
+					{:else}
+						<p>No special rules - any time can be booked in 1-hour increments.</p>
+					{/if}
+				</div>
 			</div>
 		{/each}
 
