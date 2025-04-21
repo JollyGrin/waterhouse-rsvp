@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import ModalBooking from './ModalBooking.svelte';
 	import type { Selection } from './types';
+	import { BookingRuleEngine, FixedSlotRule, FixedDurationRule, MinMaxDurationRule } from './rules-selection';
 
 	const studios: string[] = ['Studio 1', 'Studio 2', 'Studio 3', 'Studio 4', 'Studio 5'];
 	const times: string[] = Array.from({ length: 24 }).map(
@@ -53,28 +54,42 @@
 		);
 	}
 
+	// Initialize booking rule engine with our rules
+	const ruleEngine = new BookingRuleEngine([
+		// Fixed slot rule example: Studios 1-3 can only be booked in 4-hour blocks at specific times
+		new FixedSlotRule({
+			name: "3×4h windows",
+			days: [],  // All days
+			studios: [0, 1, 2],  // Studios 1, 2, 3 (0-indexed)
+			slots: [[10, 14], [14, 18], [18, 22]]
+		}),
+		// Fixed duration rule example: Weekdays in Studios 1-2 must be booked in 4-hour blocks
+		new FixedDurationRule({
+			name: "Weekday 4h fixed blocks",
+			days: [1, 2, 3, 4, 5],  // Weekdays (Monday = 1)
+			studios: [0, 1],  // Studios 1-2 (0-indexed)
+			startHour: 10,
+			endHour: 22,
+			duration: 4
+		}),
+		// Min/Max duration rule: Evening in Studio 3 can be booked for 1-2 hours
+		new MinMaxDurationRule({
+			name: "Evening max 2h",
+			days: [], // All days
+			studios: [2], // Studio 3 (0-indexed)
+			startHour: 15,
+			endHour: 20,
+			minDuration: 1,
+			maxDuration: 2
+		})
+	]);
+
 	function handleTileClick(dayIdx: number, timeIdx: number, studioIdx: number) {
 		if (isBooked(dayIdx, timeIdx, studioIdx)) return;
 		if (isSelected(dayIdx, timeIdx, studioIdx)) return clearSelection();
-		// if (selection !== null && selection.dayIdx === dayIdx && selection.studioIdx === studioIdx) {
-		// 	selection.endHourIdx = timeIdx;
-		// 	return;
-		// }
-		// Always select a block of up to 4 consecutive available hours
-		const maxBlock = 4;
-		let endHourIdx = timeIdx;
-		for (let i = 1; i < maxBlock; i++) {
-			const nextIdx = timeIdx + i;
-			if (nextIdx >= times.length) break;
-			if (isBooked(dayIdx, nextIdx, studioIdx)) break;
-			endHourIdx = nextIdx;
-		}
-		selection = {
-			dayIdx,
-			studioIdx,
-			startHourIdx: timeIdx,
-			endHourIdx
-		};
+
+		// Use the rule engine to calculate a valid selection based on applicable rules
+		selection = ruleEngine.calculateSelection(dayIdx, timeIdx, studioIdx, isBooked);
 	}
 
 	function clearSelection() {
