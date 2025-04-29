@@ -3,14 +3,8 @@
 	import { onMount } from 'svelte';
 	import ModalBooking from './ModalBooking.svelte';
 	import type { Selection } from './types';
-	import {
-		BookingRuleEngine,
-		FixedSlotRule,
-		FixedDurationRule,
-		MinMaxDurationRule,
-		TimeRangeRule
-	} from './rules-selection';
 	import TooltipRules from './TooltipRules.svelte';
+	import { ruleEngine } from './rulesEngine';
 
 	const studios: string[] = ['Studio 1', 'Studio 2', 'Studio 3', 'Studio 4', 'Studio 5'];
 	const times: string[] = Array.from({ length: 24 }).map(
@@ -27,7 +21,6 @@
 	}
 
 	type Row = { date: Date; time: string; dayIdx: number; timeIdx: number };
-	let visibleRows: Row[] = $state([]);
 	let startDate: Date = new Date(); // April 22, 2025
 	let numDays: number = $state(2);
 
@@ -40,7 +33,6 @@
 				rows.push({ date: new Date(date), time: times[t], dayIdx: d, timeIdx: t });
 			}
 		}
-		visibleRows = rows;
 	}
 
 	addMoreRows();
@@ -60,58 +52,6 @@
 			timeIdx <= selection.endHourIdx
 		);
 	}
-
-	// Initialize booking rule engine with our rules
-	const ruleEngine = new BookingRuleEngine([
-		// Early morning rule: Studios 1-3 can be booked in 1-hour increments before 10am
-		new TimeRangeRule({
-			name: 'Early morning 1h blocks',
-			days: [], // All days
-			studios: [0, 1, 2], // Studios 1, 2, 3 (0-indexed)
-			startHour: 0,
-			endHour: 10,
-			incrementSize: 1
-		}),
-		// Late evening rule: Studios 1-3 can be booked in 1-hour increments after 10pm
-		new TimeRangeRule({
-			name: 'Late evening 1h blocks',
-			days: [], // All days
-			studios: [0, 1, 2], // Studios 1, 2, 3 (0-indexed)
-			startHour: 22,
-			endHour: 24,
-			incrementSize: 1
-		}),
-		// Fixed slot rule example: Studios 1-3 can only be booked in 4-hour blocks at specific times
-		new FixedSlotRule({
-			name: '3×4h windows',
-			days: [], // All days
-			studios: [0, 1, 2], // Studios 1, 2, 3 (0-indexed)
-			slots: [
-				[10, 14],
-				[14, 18],
-				[18, 22]
-			]
-		}),
-		// Fixed duration rule example: Weekdays in Studios 1-2 must be booked in 4-hour blocks
-		new FixedDurationRule({
-			name: 'Weekday 4h fixed blocks',
-			days: [1, 2, 3, 4, 5], // Weekdays (Monday = 1)
-			studios: [0, 1], // Studios 1-2 (0-indexed)
-			startHour: 10,
-			endHour: 22,
-			duration: 4
-		}),
-		// Min/Max duration rule: Evening in Studio 3 can be booked for 1-2 hours
-		new MinMaxDurationRule({
-			name: 'Evening max 2h',
-			days: [], // All days
-			studios: [2], // Studio 3 (0-indexed)
-			startHour: 15,
-			endHour: 20,
-			minDuration: 1,
-			maxDuration: 2
-		})
-	]);
 
 	function handleTileClick(dayIdx: number, timeIdx: number, studioIdx: number) {
 		if (isBooked(dayIdx, timeIdx, studioIdx)) return;
@@ -169,7 +109,7 @@
 		<div
 			class="text-brand-fore bg-brand-back border-brand-shadow sticky top-0 left-0 z-30 border-r-2 border-b-2 px-2 py-1 text-center font-bold"
 		></div>
-		{#each studios as studio, studioIdx}
+		{#each studios as studio, studioIdx (studioIdx)}
 			<div
 				class="bg-brand-back text-brand-for border-brand-shadow group relative sticky top-[-10px] z-20 cursor-help border-b-2 px-2 py-1 text-center font-bold"
 			>
@@ -179,7 +119,7 @@
 			</div>
 		{/each}
 
-		{#each Array(numDays) as _, dayIdx}
+		{#each Array(numDays) as _, dayIdx (dayIdx)}
 			<!-- Sticky Date Header Row -->
 			<div
 				class="bg-brand-back text-brand-highlight border-brand-shadow text-md sticky top-[-10px] left-0 z-30 border-r-2 px-2 py-1 text-end font-bold"
@@ -188,19 +128,19 @@
 					new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + dayIdx)
 				)}
 			</div>
-			{#each studios as studio}
+			{#each studios as _studio, i (i)}
 				<div class="bg-brand-fore/5"></div>
 			{/each}
-			{#each times as time, timeIdx}
+			{#each times as time, timeIdx (timeIdx)}
 				<div
 					class="bg-brand-back text-brand-fore border-brand-shadow sticky left-0 z-10 justify-self-end border-r-1 px-2 py-1 font-mono text-sm font-bold"
 					class:opacity-50={time.startsWith('0') || time.startsWith('23')}
 				>
 					{time}
 				</div>
-				{#each studios as studio, colIdx}
+				{#each studios as _studio, colIdx (colIdx)}
 					<div
-						class={`group bg-brand-highlight text-brand-fore border-brand-shadow cursor-pointer border-r border-b  px-2 py-1 text-center text-sm transition-all`}
+						class="group bg-brand-highlight text-brand-fore border-brand-shadow cursor-pointer border-r border-b px-2 py-1 text-center text-sm transition-all"
 						class:!bg-[var(--color-brand-back)]={isBooked(dayIdx, timeIdx, colIdx)}
 						class:!bg-emerald-900={isSelected(dayIdx, timeIdx, colIdx)}
 						class:opacity-50={time.startsWith('0') || time.startsWith('23')}
