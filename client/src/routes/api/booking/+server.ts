@@ -118,6 +118,45 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
       );
     }
     
+    // Check if user exists, create if not (using Clerk ID)
+    let user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+    
+    if (!user) {
+      console.log(`User ${userId} does not exist. Creating user record...`);
+      user = await prisma.user.create({
+        data: {
+          id: userId,
+          email: email,
+          firstName: name.split(' ')[0], // Simple name splitting
+          lastName: name.split(' ').slice(1).join(' ') || null
+        }
+      });
+      console.log(`Created user record:`, user);
+    }
+    
+    // Check if studio exists, create if not
+    let studio = await prisma.studio.findUnique({
+      where: { id: studioId }
+    });
+    
+    if (!studio) {
+      console.log(`Studio ${studioId} does not exist. Creating studio record...`);
+      
+      // Create a default studio with the ID from the form
+      // In a real app, you would probably have a separate admin interface for creating studios
+      studio = await prisma.studio.create({
+        data: {
+          id: studioId,
+          name: `Studio ${studioId}`,
+          description: 'Automatically created studio',
+          hourlyRate: totalPrice / ((endTime.getTime() - startTime.getTime()) / 3600000) // Calculate hourly rate
+        }
+      });
+      console.log(`Created studio record:`, studio);
+    }
+    
     // Create the reservation in the database
     const newReservation = await prisma.reservation.create({
       data: {
