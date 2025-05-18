@@ -1,0 +1,26 @@
+{
+  "name": "waterhouse-rsvp-db",
+  "version": "1.0.0",
+  "description": "Database layer for Waterhouse Reservation System",
+  "main": "index.js",
+  "scripts": {
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "generate": "prisma generate",
+    "studio": "prisma studio",
+    "db:start": "./scripts/manage-db.sh start",
+    "db:stop": "./scripts/manage-db.sh stop",
+    "db:restart": "./scripts/manage-db.sh restart",
+    "db:status": "./scripts/manage-db.sh status",
+    "db:remove": "./scripts/manage-db.sh remove",
+    "setup": "npm run db:start && npm run generate && npm run db:push",
+    "test:connection": "node tests/test-connection.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.5.2"
+  },
+  "devDependencies": {
+    "prisma": "^5.5.2"
+  }
+}
