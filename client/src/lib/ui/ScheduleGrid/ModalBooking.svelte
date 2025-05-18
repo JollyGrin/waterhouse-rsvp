@@ -1,11 +1,23 @@
 <script lang="ts">
-	export let onClose: () => void;
-	export let selection: {
-		dayIdx: number;
-		studioIdx: number;
-		startHourIdx: number;
-		endHourIdx: number;
-	} | null;
+	import { enhance } from '$app/forms';
+	import { useClerkContext } from 'svelte-clerk';
+	import toast from 'svelte-french-toast';
+
+	let {
+		onClose,
+		selection
+	}: {
+		onClose(): void;
+		selection: {
+			dayIdx: number;
+			studioIdx: number;
+			startHourIdx: number;
+			endHourIdx: number;
+		} | null;
+	} = $props();
+
+	const clerk = useClerkContext();
+	const userId = $derived(clerk.auth.userId);
 
 	// The studios array (copied from ScheduleGrid since we can't directly import from constants-mock)
 	const studios: string[] = ['Studio 1', 'Studio 2', 'Studio 3', 'Studio 4', 'Studio 5'];
@@ -36,27 +48,63 @@
 	}
 
 	// Form state
-	let name = '';
-	let email = '';
-	let phone = '';
-	let notes = '';
+	let name = $state('');
+	let email = $state('');
+	let phone = $state('');
+	let notes = $state('');
 
 	// Form validation
-	let submitted = false;
-	$: formValid = name.trim() !== '' && email.trim() !== '';
+	let submitted = $state(false);
+	let submitting = $state(false);
+	let error = $state('');
 
-	function handleSubmit() {
+	const formValid = $derived(name.trim() !== '' && email.trim() !== '');
+
+	// Convert selection to absolute date/time
+	function getBookingData() {
+		if (!selection) return null;
+
+		// Calculate start and end dates
+		const startDate = new Date();
+		startDate.setDate(startDate.getDate() + selection.dayIdx);
+		startDate.setHours(selection.startHourIdx, 0, 0, 0);
+
+		const endDate = new Date(startDate);
+		endDate.setHours(selection.endHourIdx + 1, 0, 0, 0); // End hour is inclusive in UI, exclusive in API
+
+		return {
+			studioId: (selection.studioIdx + 1).toString(), // Convert to 1-based ID for now
+			startTime: startDate.toISOString(),
+			endTime: endDate.toISOString(),
+			totalPrice: (selection.endHourIdx - selection.startHourIdx + 1) * 75, // Simple price calculation: $75/hour
+			userId,
+			status: 'pending',
+			name,
+			email,
+			phone,
+			notes
+		};
+	}
+
+	// Form submission handler with enhanced progressive enhancement
+	function handleSubmission(event: SubmitEvent) {
 		submitted = true;
-		if (formValid) {
-			// TODO: Add actual submission logic here
-			console.log('Booking submitted', {
-				name,
-				email,
-				phone,
-				notes,
-				selection
-			});
-			onClose();
+
+		if (!formValid) {
+			event.preventDefault();
+			return;
+		}
+
+		if (!userId) {
+			event.preventDefault();
+			error = 'You must be logged in to make a booking';
+			return;
+		}
+
+		if (!selection) {
+			event.preventDefault();
+			error = 'No time slot selected';
+			return;
 		}
 	}
 
@@ -107,7 +155,29 @@
 	</div>
 
 	<!-- Booking Form -->
-	<form onsubmit={() => handleSubmit()} class="space-y-4">
+	<form
+		method="POST"
+		action="/api/booking"
+		onsubmit={handleSubmission}
+		use:enhance={() => {
+			submitting = true;
+			error = '';
+
+			return async ({ result, update }) => {
+				submitting = false;
+
+				if (result.type === 'success') {
+					toast.success('Booking confirmed!');
+					await update();
+					onClose();
+				} else if (result.type === 'error') {
+					error = result.error?.message || 'Failed to create booking';
+					toast.error(error);
+				}
+			};
+		}}
+		class="space-y-4"
+	>
 		<div>
 			<label for="name" class="mb-1 block text-sm font-medium text-gray-300">Full Name *</label>
 			<input
@@ -156,6 +226,44 @@
 			></textarea>
 		</div>
 
+		{#if error}
+			<div class="rounded-md bg-red-900/30 p-3 text-sm text-red-200">
+				{error}
+			</div>
+		{/if}
+
+		<!-- Hidden form fields for API data -->
+		{#if selection}
+			<input type="hidden" name="studioId" value={(selection.studioIdx + 1).toString()} />
+			<input type="hidden" name="userId" value={userId || ''} />
+			<input
+				type="hidden"
+				name="startTime"
+				value={new Date(new Date().setDate(new Date().getDate() + selection.dayIdx)).setHours(
+					selection.startHourIdx,
+					0,
+					0,
+					0
+				)}
+			/>
+			<input
+				type="hidden"
+				name="endTime"
+				value={new Date(new Date().setDate(new Date().getDate() + selection.dayIdx)).setHours(
+					selection.endHourIdx + 1,
+					0,
+					0,
+					0
+				)}
+			/>
+			<input
+				type="hidden"
+				name="totalPrice"
+				value={(selection.endHourIdx - selection.startHourIdx + 1) * 75}
+			/>
+			<input type="hidden" name="status" value="pending" />
+		{/if}
+
 		<div class="mt-6 flex items-center justify-end space-x-3">
 			<button
 				type="button"
@@ -166,9 +274,14 @@
 			</button>
 			<button
 				type="submit"
-				class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-none"
+				disabled={submitting}
+				class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 			>
-				Confirm Booking
+				{#if submitting}
+					Processing...
+				{:else}
+					Confirm Booking
+				{/if}
 			</button>
 		</div>
 	</form>

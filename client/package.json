@@ -12,7 +12,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
-		"lint": "prettier --check . && eslint ."
+		"lint": "prettier --check . && eslint .",
+		"prisma:copy": "scripts/copy-prisma-client.sh"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -22,6 +23,7 @@
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/vite": "^4.0.0",
+		"@types/node": "^22.15.18",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.0.0",
@@ -29,6 +31,7 @@
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
 		"prettier-plugin-tailwindcss": "^0.6.11",
+		"prisma": "^6.8.2",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.0.0",
 		"tailwindcss": "^4.0.0",
@@ -37,8 +40,10 @@
 		"vite": "^6.2.5"
 	},
 	"dependencies": {
+		"@clerk/backend": "^1.32.2",
 		"@inlang/paraglide-js": "^2.0.0",
+		"@prisma/client": "^6.8.2",
 		"svelte-clerk": "^0.11.3",
-		"svelte-french-toast": "^1.2.0"
+		"svelte-french-toast": "^2.0.0-alpha.0"
 	}
 }

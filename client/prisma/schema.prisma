@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users model - to be linked with Clerk authentication
+model User {
+  id        String   @id
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  reservations Reservation[]
+}
+
+// Studios model
+model Studio {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  hourlyRate  Decimal  @db.Decimal(10, 2)
+  imageUrl    String?
+  capacity    Int?
+  amenities   String[] // Array of amenities as strings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  reservations Reservation[]
+}
+
+// Reservations model
+model Reservation {
+  id          String   @id @default(uuid())
+  startTime   DateTime
+  endTime     DateTime
+  status      String   @default("pending") // pending, confirmed, cancelled
+  totalPrice  Decimal  @db.Decimal(10, 2)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  studioId    String
+  studio      Studio   @relation(fields: [studioId], references: [id])
+  
+  // Indexes for performance
+  @@index([userId])
+  @@index([studioId])
+  @@index([startTime, endTime])
+}
