@@ -4,7 +4,8 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "scripts/setup-prisma.sh && vite dev",
+		"build:check": "scripts/setup-prisma.sh && vite build",
 		"build": "vite build",
 		"preview": "vite preview",
 		"start": "bun run build/index.js",
@@ -13,7 +14,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"prisma:copy": "scripts/copy-prisma-client.sh"
+		"prisma:setup": "scripts/setup-prisma.sh",
+		"prisma:generate": "npx prisma generate"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
