@@ -183,6 +183,7 @@
 			<input
 				type="text"
 				id="name"
+				name="name"
 				bind:value={name}
 				class="w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 				required
@@ -197,6 +198,7 @@
 			<input
 				type="email"
 				id="email"
+				name="email"
 				bind:value={email}
 				class="w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 				required
@@ -211,6 +213,7 @@
 			<input
 				type="tel"
 				id="phone"
+				name="phone"
 				bind:value={phone}
 				class="w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 			/>
@@ -220,6 +223,7 @@
 			<label for="notes" class="mb-1 block text-sm font-medium text-gray-300">Notes</label>
 			<textarea
 				id="notes"
+				name="notes"
 				bind:value={notes}
 				rows="3"
 				class="w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
