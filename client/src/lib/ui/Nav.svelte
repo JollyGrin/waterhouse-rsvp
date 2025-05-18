@@ -4,11 +4,9 @@
 		SignedOut,
 		SignInButton,
 		useClerkContext,
-		UserButton,
-		UserProfile
+		UserButton
 	} from 'svelte-clerk/client';
 	const clerk = useClerkContext();
-	const userId = $derived(clerk.auth.userId);
 	const userName = $derived(clerk.user?.username ?? clerk.user?.fullName);
 </script>
 

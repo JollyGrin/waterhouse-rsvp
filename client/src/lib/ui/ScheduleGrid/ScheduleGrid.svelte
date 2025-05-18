@@ -5,8 +5,14 @@
 	import type { Selection } from './types';
 	import TooltipRules from './TooltipRules.svelte';
 	import { ruleEngine } from './rulesEngine';
+	import { useClerkContext } from 'svelte-clerk';
+	import toast from 'svelte-french-toast';
+
+	const clerk = useClerkContext();
+	const userId = $derived(clerk.auth.userId);
 
 	const studios: string[] = ['Studio 1', 'Studio 2', 'Studio 3', 'Studio 4', 'Studio 5'];
+
 	const times: string[] = Array.from({ length: 24 }).map(
 		(_, i) => `${i.toString().padStart(2, '0')}:00`
 	);
@@ -111,7 +117,7 @@
 		></div>
 		{#each studios as studio, studioIdx (studioIdx)}
 			<div
-				class="bg-brand-back text-brand-for border-brand-shadow group relative sticky top-[-10px] z-20 cursor-help border-b-2 px-2 py-1 text-center font-bold"
+				class="bg-brand-back text-brand-for border-brand-shadow group sticky top-[-10px] z-20 cursor-help border-b-2 px-2 py-1 text-center font-bold"
 			>
 				{studio}
 				<!-- Studio rule tooltip -->
@@ -146,7 +152,10 @@
 						class:opacity-50={time.startsWith('0') || time.startsWith('23')}
 						tabindex="0"
 						role="button"
-						onclick={() => handleTileClick(dayIdx, timeIdx, colIdx)}
+						onclick={() => {
+							if (!userId) return toast.error('Please sign in to make a reservation');
+							handleTileClick(dayIdx, timeIdx, colIdx);
+						}}
 						onkeydown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') handleTileClick(dayIdx, timeIdx, colIdx);
 						}}
