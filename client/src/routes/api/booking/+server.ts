@@ -9,6 +9,14 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
     // Parse the form data
     const formData = await request.formData();
     
+    // Debug all form data
+    console.log('Received form data:');
+    const formDataObj: Record<string, string> = {};
+    for (const [key, value] of formData.entries()) {
+      formDataObj[key] = value as string;
+      console.log(`${key}: ${value}`);
+    }
+    
     // Extract form values
     const userId = formData.get('userId') as string;
     const studioId = formData.get('studioId') as string;
@@ -21,31 +29,63 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
     const phone = formData.get('phone') as string || null;
     const notes = formData.get('notes') as string || null;
     
-    // Validate required fields
-    if (!userId || !studioId || !startTimeStr || !endTimeStr || !totalPriceStr || !name || !email) {
+    // Enhanced validation with specific error messages
+    const missingFields = [];
+    if (!userId) missingFields.push('userId');
+    if (!studioId) missingFields.push('studioId');
+    if (!startTimeStr) missingFields.push('startTime');
+    if (!endTimeStr) missingFields.push('endTime');
+    if (!totalPriceStr) missingFields.push('totalPrice');
+    if (!name) missingFields.push('name');
+    if (!email) missingFields.push('email');
+    
+    if (missingFields.length > 0) {
+      const errorMessage = `Missing required fields: ${missingFields.join(', ')}`;
+      console.error(errorMessage);
       return json(
-        { success: false, error: { message: 'Missing required fields' } },
+        { success: false, error: { message: errorMessage, fields: missingFields } },
         { status: 400 }
       );
     }
     
     // Parse dates and numbers
-    const startTime = new Date(Number(startTimeStr));
-    const endTime = new Date(Number(endTimeStr));
-    const totalPrice = parseFloat(totalPriceStr);
+    let startTime: Date;
+    let endTime: Date;
+    let totalPrice: number;
     
-    // Validate parsed values
-    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime()) || isNaN(totalPrice)) {
+    try {
+      console.log('Parsing startTime:', startTimeStr);
+      startTime = new Date(startTimeStr); // Now expecting ISO string
+      if (isNaN(startTime.getTime())) throw new Error('Invalid startTime format');
+      
+      console.log('Parsing endTime:', endTimeStr);
+      endTime = new Date(endTimeStr); // Now expecting ISO string
+      if (isNaN(endTime.getTime())) throw new Error('Invalid endTime format');
+      
+      console.log('Parsing totalPrice:', totalPriceStr);
+      totalPrice = parseFloat(totalPriceStr);
+      if (isNaN(totalPrice)) throw new Error('Invalid totalPrice format');
+      
+      console.log('Parsed values:', { 
+        startTime: startTime.toISOString(), 
+        endTime: endTime.toISOString(), 
+        totalPrice 
+      });
+    } catch (err) {
+      const errorMessage = `Error parsing data: ${(err as Error).message}`;
+      console.error(errorMessage);
       return json(
-        { success: false, error: { message: 'Invalid date or price format' } },
+        { success: false, error: { message: errorMessage } },
         { status: 400 }
       );
     }
     
     // Validate time range
     if (startTime >= endTime) {
+      const errorMessage = `Invalid time range: ${startTime.toISOString()} to ${endTime.toISOString()}`;
+      console.error(errorMessage);
       return json(
-        { success: false, error: { message: 'End time must be after start time' } },
+        { success: false, error: { message: errorMessage } },
         { status: 400 }
       );
     }

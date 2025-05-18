@@ -236,26 +236,24 @@
 		{#if selection}
 			<input type="hidden" name="studioId" value={(selection.studioIdx + 1).toString()} />
 			<input type="hidden" name="userId" value={userId || ''} />
-			<input
-				type="hidden"
-				name="startTime"
-				value={new Date(new Date().setDate(new Date().getDate() + selection.dayIdx)).setHours(
-					selection.startHourIdx,
-					0,
-					0,
-					0
-				)}
-			/>
-			<input
-				type="hidden"
-				name="endTime"
-				value={new Date(new Date().setDate(new Date().getDate() + selection.dayIdx)).setHours(
-					selection.endHourIdx + 1,
-					0,
-					0,
-					0
-				)}
-			/>
+            
+			<!-- Format dates properly - create ISO strings -->
+			{@const startDate = (() => {
+				const date = new Date();
+				date.setDate(date.getDate() + selection.dayIdx);
+				date.setHours(selection.startHourIdx, 0, 0, 0);
+				return date;
+			})()}
+			
+			{@const endDate = (() => {
+				const date = new Date();
+				date.setDate(date.getDate() + selection.dayIdx);
+				date.setHours(selection.endHourIdx + 1, 0, 0, 0);
+				return date;
+			})()}
+			
+			<input type="hidden" name="startTime" value={startDate.toISOString()} />
+			<input type="hidden" name="endTime" value={endDate.toISOString()} />
 			<input
 				type="hidden"
 				name="totalPrice"
