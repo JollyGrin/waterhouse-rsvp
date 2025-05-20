@@ -80,6 +80,7 @@
 		cellEndTime.setHours(timeIdx + 1, 0, 0, 0);
 
 		// Convert column index to studioId format (Studio 1, Studio 2, etc.)
+		// TODO: later the ids of studio should be detached from column number
 		const studioId = `${col + 1}`;
 
 		// Check if any reservation overlaps with this cell
