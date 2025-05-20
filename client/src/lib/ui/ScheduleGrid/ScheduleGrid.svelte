@@ -8,6 +8,22 @@
 	import { useClerkContext } from 'svelte-clerk';
 	import toast from 'svelte-french-toast';
 
+	// Accept real reservations from the database
+	const { reservations = [] } = $props<{
+		reservations?: Array<{
+			id: string;
+			userId: string;
+			studioId: string;
+			startTime: string;
+			endTime: string;
+			totalPrice: number;
+			status: string;
+			notes?: string | null;
+		}>;
+	}>();
+
+	$inspect({ reservations });
+
 	const clerk = useClerkContext();
 	const userId = $derived(clerk.auth.userId);
 
@@ -44,7 +60,50 @@
 	addMoreRows();
 
 	function isBooked(dayIdx: number, timeIdx: number, col: number): boolean {
-		return booked.some(([d, t, c]) => d === dayIdx && t === timeIdx && c === col);
+		// Check mock data first (for development/testing)
+		if (booked.some(([d, t, c]) => d === dayIdx && t === timeIdx && c === col)) {
+			return true;
+		}
+
+		// Now check real reservations from the database
+		// Get date and time for this cell
+		const date = new Date(startDate);
+		date.setDate(startDate.getDate() + dayIdx);
+
+		// Set hours from timeIdx (which is 0-23)
+		const cellStartTime = new Date(date);
+		cellStartTime.setHours(timeIdx, 0, 0, 0);
+
+		// Cell end time is 1 hour later
+		const cellEndTime = new Date(date);
+		cellEndTime.setHours(timeIdx + 1, 0, 0, 0);
+
+		// Convert column index to studioId format (Studio 1, Studio 2, etc.)
+		const studioId = `Studio ${col + 1}`;
+
+		// Check if any reservation overlaps with this cell
+		return reservations.some(
+			(reservation: {
+				id: string;
+				userId: string;
+				studioId: string;
+				startTime: string;
+				endTime: string;
+				totalPrice: number;
+				status: string;
+				notes?: string | null;
+			}) => {
+				// Skip if studio doesn't match
+				if (reservation.studioId !== studioId) return false;
+
+				// Convert reservation times to Date objects
+				const resStart = new Date(reservation.startTime);
+				const resEnd = new Date(reservation.endTime);
+
+				// Check for overlap (standard interval overlap check)
+				return resStart < cellEndTime && resEnd > cellStartTime;
+			}
+		);
 	}
 
 	let selection: Selection | null = $state(null);

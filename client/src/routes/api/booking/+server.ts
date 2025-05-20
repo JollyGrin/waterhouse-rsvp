@@ -198,15 +198,27 @@ export const GET: RequestHandler = async ({ url }) => {
       where.studioId = studioId;
     }
     
-    if (startDate && endDate) {
-      where.OR = [
-        {
-          startTime: { gte: new Date(startDate), lt: new Date(endDate) },
-        },
-        {
-          endTime: { gt: new Date(startDate), lte: new Date(endDate) },
-        }
-      ];
+    // Handle date filtering
+    if (startDate) {
+      // If only startDate is provided (e.g., "now minus 1 hour"),
+      // filter reservations that start after or end after this time
+      if (!endDate) {
+        where.OR = [
+          { startTime: { gte: new Date(startDate) } },
+          { endTime: { gt: new Date(startDate) } }
+        ];
+      } 
+      // If both dates are provided, use the original range logic
+      else {
+        where.OR = [
+          {
+            startTime: { gte: new Date(startDate), lt: new Date(endDate) },
+          },
+          {
+            endTime: { gt: new Date(startDate), lte: new Date(endDate) },
+          }
+        ];
+      }
     }
     
     // Query the database for reservations
