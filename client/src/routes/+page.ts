@@ -4,12 +4,12 @@ import type { Reservation } from '$lib/types/reservation';
 
 export const load: PageLoad = async ({ fetch }) => {
   try {
-    // Calculate "now minus 1 hour" as the start date
+    // Calculate start of today as the start date
     const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const startOfToday = new Date(now.setHours(0, 0, 0, 0));
 
     // Format dates as ISO strings for the API
-    const startDateParam = oneHourAgo.toISOString();
+    const startDateParam = startOfToday.toISOString();
 
     // Fetch reservations from our API
     const response = await fetch(`/api/booking?startDate=${startDateParam}`, {
