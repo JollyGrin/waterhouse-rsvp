@@ -148,7 +148,13 @@
 </script>
 
 {#if isBookingModalOpen}
-	<ModalBooking onClose={() => (isBookingModalOpen = false)} {selection} />
+	<ModalBooking
+		onClose={() => {
+			isBookingModalOpen = false;
+			clearSelection();
+		}}
+		{selection}
+	/>
 {/if}
 
 <div

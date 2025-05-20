@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { useClerkContext } from 'svelte-clerk';
 	import toast from 'svelte-french-toast';
 
@@ -163,12 +164,17 @@
 			submitting = true;
 			error = '';
 
+			console.log('ENHANCE: init');
+
 			return async ({ result, update }) => {
+				console.log('ENHANCE: async', result, result?.type, result?.success);
 				submitting = false;
 
-				if (result.type === 'success') {
+				// @ts-expect-error: success exists as a method
+				if (result.success) {
 					toast.success('Booking confirmed!');
 					await update();
+					await invalidateAll();
 					onClose();
 				} else if (result.type === 'error') {
 					error = result.error?.message || 'Failed to create booking';
@@ -240,7 +246,7 @@
 		{#if selection}
 			<input type="hidden" name="studioId" value={(selection.studioIdx + 1).toString()} />
 			<input type="hidden" name="userId" value={userId || ''} />
-            
+
 			<!-- Format dates properly - create ISO strings -->
 			{@const startDate = (() => {
 				const date = new Date();
@@ -248,14 +254,14 @@
 				date.setHours(selection.startHourIdx, 0, 0, 0);
 				return date;
 			})()}
-			
+
 			{@const endDate = (() => {
 				const date = new Date();
 				date.setDate(date.getDate() + selection.dayIdx);
 				date.setHours(selection.endHourIdx + 1, 0, 0, 0);
 				return date;
 			})()}
-			
+
 			<input type="hidden" name="startTime" value={startDate.toISOString()} />
 			<input type="hidden" name="endTime" value={endDate.toISOString()} />
 			<input
