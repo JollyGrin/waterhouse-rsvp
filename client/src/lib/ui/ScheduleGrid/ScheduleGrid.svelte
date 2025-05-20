@@ -7,6 +7,7 @@
 	import { ruleEngine } from './rulesEngine';
 	import { useClerkContext } from 'svelte-clerk';
 	import toast from 'svelte-french-toast';
+	import type { Reservation } from '$lib/types/reservation';
 
 	// Accept real reservations from the database
 	const { reservations = [] } = $props<{
@@ -79,31 +80,20 @@
 		cellEndTime.setHours(timeIdx + 1, 0, 0, 0);
 
 		// Convert column index to studioId format (Studio 1, Studio 2, etc.)
-		const studioId = `Studio ${col + 1}`;
+		const studioId = `${col + 1}`;
 
 		// Check if any reservation overlaps with this cell
-		return reservations.some(
-			(reservation: {
-				id: string;
-				userId: string;
-				studioId: string;
-				startTime: string;
-				endTime: string;
-				totalPrice: number;
-				status: string;
-				notes?: string | null;
-			}) => {
-				// Skip if studio doesn't match
-				if (reservation.studioId !== studioId) return false;
+		return reservations.some((reservation: Reservation) => {
+			// Skip if studio doesn't match
+			if (reservation.studioId !== studioId) return false;
 
-				// Convert reservation times to Date objects
-				const resStart = new Date(reservation.startTime);
-				const resEnd = new Date(reservation.endTime);
+			// Convert reservation times to Date objects
+			const resStart = new Date(reservation.startTime);
+			const resEnd = new Date(reservation.endTime);
 
-				// Check for overlap (standard interval overlap check)
-				return resStart < cellEndTime && resEnd > cellStartTime;
-			}
-		);
+			// Check for overlap (standard interval overlap check)
+			return resStart < cellEndTime && resEnd > cellStartTime;
+		});
 	}
 
 	let selection: Selection | null = $state(null);
