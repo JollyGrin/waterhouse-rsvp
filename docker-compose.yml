@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: waterhouse-postgres
+    environment:
+      POSTGRES_USER: waterhouse
+      POSTGRES_PASSWORD: waterhouse123
+      POSTGRES_DB: waterhouse_rsvp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U waterhouse -d waterhouse_rsvp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    container_name: waterhouse-backend
+    environment:
+      DATABASE_URL: postgresql://waterhouse:waterhouse123@postgres:5432/waterhouse_rsvp
+      PORT: 3001
+      NODE_ENV: production
+      FRONTEND_URL: http://localhost:5173
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "cd packages/shared && npx prisma migrate deploy && cd ../.. && npm run start --workspace=backend"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+    container_name: waterhouse-frontend
+    environment:
+      PUBLIC_BACKEND_URL: http://backend:3001
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

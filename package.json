@@ -1,0 +1,26 @@
+{
+  "name": "waterhouse-rsvp",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=frontend & npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "build": "npm run build --workspaces",
+    "preview": "npm run preview --workspace=frontend",
+    "check": "npm run check --workspaces",
+    "docker:full": "docker-compose -f docker-compose.yml up",
+    "docker:backend": "docker-compose -f docker-compose.backend.yml up",
+    "docker:build": "docker-compose -f docker-compose.yml build",
+    "docker:build:backend": "docker-compose -f docker-compose.backend.yml build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

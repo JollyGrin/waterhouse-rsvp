@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@waterhouse-rsvp/shared';
 
 // Use a singleton pattern for Prisma to prevent too many connections in development
 const prismaClientSingleton = () => {
